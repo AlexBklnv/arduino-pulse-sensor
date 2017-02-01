@@ -1,46 +1,57 @@
-#include <MsTimer2.h>
+#include <SPI.h>
+#include <nRF24L01.h>
+#include <RF24.h>
 
-int pulsePin = 0;                   // Пин сенсора
-int blinkPin = 13;                  // Пин диода, если есть пульс, то моргает
-String msg = "";                    // Сообщение получаемое от второго МК и в дальнейшем сообщение для отправки
-bool isScanPulseAvailable = false;
-long receiveTimeOut;
+#define CE_PIN 9                      // пин радиомодуля Chip Enable
+#define CSN_PIN 10                    // пин радиомодуля Chip Select
+#define PULSE_PIN 0                   // пин сенсора пульса
+#define LED_PIN 13                    // встроенный лед 
 
-// Переменные изменяемые в прерывании
-volatile int BPM;                   // Удары в минуту
-volatile int Signal;                // Сигнал получаемый с датчика пульса
-volatile int IBI = 600;             // Интервал между ударами, подстраиваемая переменная
-volatile boolean Pulse = false;     // "True" при обнаружении сердцебиения, используется в прерывании
-volatile boolean QS = false;        // Если есть промежуток QRS то True есть пульс
+RF24 radio(CE_PIN, CSN_PIN);
+
+bool  startScan = false;
+
+unsigned long intScanTime = 0;                  // следим за интервалом в 2 мс
+unsigned long lastRadioSendTimeStamp  = 0;      // передача данных интервал
+
+// переменные по обработке пульса
+int BPM;                             // Удары в минуту
+int Signal;                          // Сигнал получаемый с датчика пульса
+int IBI = 600;                       // Интервал между ударами, подстраиваемая переменная
+boolean Pulse = false;               // "True" при обнаружении сердцебиения, используется в прерывании
+boolean QS = false;                  // Если есть промежуток QRS то True есть пульс
 
 void setup() {
-  pinMode(blinkPin, OUTPUT);        // настраиваем лед для моргании при биении сердца
+  pinMode(LED_PIN, OUTPUT);        // настраиваем лед для моргании при биении сердца
   Serial.begin(115200);
-  interruptSetup();                 //установка прерывания срабатываемого раз в 2мс
   // если питание меньше 5v то раскомментить
   // analogReference(EXTERNAL);
-  startScan();
+  initRadio();
 }
 
 void loop() {
   // отправка уровня сигнала в сериал
-  serialOutputSignal();
+  // serialOutputSignal();
   
- /* if (Serial.available()) {
-    msg = serialReceiveMessage();
-    if (msg == "#SPA=start") {
-      startScan();
-    } else if (msg == "#SPA=stop") {
-      stopScan();
-      QS = false;
+  readDataFromRadio();
+
+  if (!startScan) {
+    lastRadioSendTimeStamp = millis();
+  }
+
+  if (startScan) {
+    if (millis() - intScanTime >= 2) {
+      scanning();
     }
-    msg = "";
-  }*/
-  
-  if (QS == true) {                  // если есть пульс то срабатывает
-    serialOutputWhenBeatHappens();   // отправка в сериал данных о пульсе, время между ударами и сердцебиение
-    QS = false;
+    if (millis() - lastRadioSendTimeStamp >= 600) {
+      if (QS == true) {                  // если есть пульс то срабатывает
+        //serialOutputWhenBeatHappens();   // отправка в сериал данных о пульсе, время между ударами и сердцебиение
+        QS = false;
+        writeDataToRadio();
+        Serial.println(BPM);
+        lastRadioSendTimeStamp = millis();
+      }
+    }
   }
   delay(20);
 }
-
