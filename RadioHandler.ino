@@ -1,4 +1,4 @@
-const uint64_t pipes[2] = { 0xF0F0F0F0E1LL, 0xF0F0F0F0D2LL};
+const uint64_t pipes[2] = { 0xABCDABCD71, 0x544d52687C };
 
 void initRadio() {
   radio.begin();
@@ -6,24 +6,29 @@ void initRadio() {
   radio.setChannel(91);
   radio.setDataRate(RF24_1MBPS);
   radio.setPALevel(RF24_PA_MIN);
-  radio.setRetries(7, 15);
+  radio.setRetries(15, 15);
   radio.openWritingPipe(pipes[0]);               // Открываем канал передачи
   radio.openReadingPipe(1, pipes[1]);             // Открываем канал приема
   radio.startListening();
 }
 
 void writeDataToRadio() {
-  String msg = "#";
-  msg += BPM;
-  radio.write(&msg, sizeof(msg));
+  if (BPM > 20 && BPM < 300) {
+    char msg[3];
+    sprintf(msg, "%d", BPM);
+    radio.stopListening();
+    radio.write(&msg, sizeof(msg));
+    radio.startListening();
+  }
 }
 
-void readDataFromRadio() {
+void readCommandFromRadio() {
   if (radio.available()) {
-    String msg = "";
+    char msg[3];
     radio.read(&msg, 3);
     if (msg[0] == '#') {
       if (msg[1] == '<' && msg[2] == '<') {
+        lastRadioReceiveTimeStamp = millis();
         startScan = true;
       } else if (msg[1] == '>' && msg[2] == '|') {
         startScan = false;

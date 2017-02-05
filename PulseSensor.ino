@@ -13,9 +13,11 @@ bool  startScan = false;
 
 unsigned long intScanTime = 0;                  // следим за интервалом в 2 мс
 unsigned long lastRadioSendTimeStamp  = 0;      // передача данных интервал
+unsigned long lastRadioReceiveTimeStamp = 0;
+
 
 // переменные по обработке пульса
-int BPM;                             // Удары в минуту
+int BPM = 1234;                           // Удары в минуту
 int Signal;                          // Сигнал получаемый с датчика пульса
 int IBI = 600;                       // Интервал между ударами, подстраиваемая переменная
 boolean Pulse = false;               // "True" при обнаружении сердцебиения, используется в прерывании
@@ -32,26 +34,32 @@ void setup() {
 void loop() {
   // отправка уровня сигнала в сериал
   // serialOutputSignal();
-  
+
   readDataFromRadio();
 
   if (!startScan) {
     lastRadioSendTimeStamp = millis();
+    Serial.print("Start\r\n");
+  }
+
+  if (startScan) {
+    if (millis() - lastRadioReceiveTimeStamp >= 300000) {
+      startScan = false;
+      Serial.print("Stop\r\n");
+    }
   }
 
   if (startScan) {
     if (millis() - intScanTime >= 2) {
       scanning();
     }
-    if (millis() - lastRadioSendTimeStamp >= 600) {
+    if (millis() - lastRadioSendTimeStamp >= 1000) {
       if (QS == true) {                  // если есть пульс то срабатывает
         //serialOutputWhenBeatHappens();   // отправка в сериал данных о пульсе, время между ударами и сердцебиение
         QS = false;
         writeDataToRadio();
-        Serial.println(BPM);
         lastRadioSendTimeStamp = millis();
       }
     }
   }
-  delay(20);
 }
