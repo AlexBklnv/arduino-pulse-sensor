@@ -10,7 +10,7 @@ void initRadio() {
   radio.openWritingPipe(pipes[0]);                // Открываем канал передачи
   radio.openReadingPipe(1, pipes[1]);             // Открываем канал приема
   radio.startListening();
-    radio.printDetails();
+  radio.printDetails();
 }
 
 void writeDataToRadio() {                         // отправка данных на велопк

@@ -24,9 +24,8 @@ boolean Pulse = false;                                          // "True" при
 boolean QS = false;                                             // Если есть промежуток QRS то True есть пульс
 
 void setup() {
-  pinMode(LED_PIN, OUTPUT);                                     // настраиваем лед для моргании при биении сердца
+//  pinMode(LED_PIN, OUTPUT);                                     // настраиваем лед для моргании при биении сердца
   Serial.begin(115200);
-  //  printf_begin();
   // если питание меньше 5v то раскомментить
   // analogReference(EXTERNAL);
   initRadio();
@@ -44,7 +43,7 @@ void loop() {
   if (startScan) {                                              // если сигнал потерян на 10 секунд то вырубем пульсомтр
     if (millis() - lastRadioReceiveTimeStamp >= 10000) {
       startScan = false;
-      Serial.print("Stop\r\n");
+    //  Serial.print("Stop\r\n");
     }
   }
 
@@ -62,14 +61,6 @@ void loop() {
     }
   }
 }
-/* для проверки роботоспособности радиомодуля
-int serial_putc( char c, FILE * ) {
-  Serial.write( c );
-  return c;
-}
 
-void printf_begin(void) {
-  fdevopen( &serial_putc, 0 );
-}
-*/
+
 
