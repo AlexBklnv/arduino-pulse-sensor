@@ -14,13 +14,11 @@ void initRadio() {
 }
 
 void writeDataToRadio() {                         // отправка данных на велопк
-  if (BPM > 20 && BPM < 300) {
-    char msg[3];
-    sprintf(msg, "%d", BPM);
-    radio.stopListening();
-    radio.write(&msg, sizeof(msg));
-    radio.startListening();
-  }
+  char msg[3];
+  sprintf(msg, "%d", BPM);
+  radio.stopListening();
+  radio.write(&msg, sizeof(msg));
+  radio.startListening();
 }
 
 void readCommandFromRadio() {                     // прием команд от вело пк
@@ -30,9 +28,9 @@ void readCommandFromRadio() {                     // прием команд о�
     if (msg[0] == '#') {
       if (msg[1] == '<' && msg[2] == '<') {
         lastRadioReceiveTimeStamp = millis();
-        startScan = true;
+        isScaningEnabled = true;
       } else if (msg[1] == '>' && msg[2] == '|') {
-        startScan = false;
+        switchScanning(false);
       }
     }
   }
